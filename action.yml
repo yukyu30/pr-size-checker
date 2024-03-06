@@ -1,0 +1,62 @@
+name: 'PR Size and Lines Checker'
+description: 'Checks if the PR size and total changed lines are within specified limits, excluding specific files between base and head refs'
+inputs:
+  max-files:
+    description: 'Maximum number of files allowed in a PR'
+    required: true
+    default: '20'
+  max-lines:
+    description: 'Maximum number of changed lines allowed in a PR'
+    required: true
+    default: '400'
+  exclude-filepath:
+    description: 'Pattern of file paths to exclude (regex), separate patterns with |'
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v4
+      name: checkout "${{ github.base_ref }}"
+      with:
+        fetch-depth: 1
+        ref: ${{ github.base_ref }}
+    - uses: actions/checkout@v4
+      name: checkout "${{ github.head_ref }}"
+      with:
+        fetch-depth: 1
+        ref: ${{ github.head_ref}}
+
+    - name: Get number of changed files
+      run: |
+        exclude_pattern=${{ inputs.exclude-filepath }}
+        if [ -z "$exclude_pattern" ]; then
+          exclude_cmd="cat"
+        else
+          exclude_cmd="grep -vE '$exclude_pattern'"
+        fi
+        count=$(git diff  origin/${{ github.base_ref }} --name-only| $exclude_cmd | wc -l)
+        echo "changed_files_count=$count" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Get total number of changed lines
+      run: |
+        exclude_pattern=${{ inputs.exclude-filepath }}
+        if [ -z "$exclude_pattern" ]; then
+          exclude_cmd="cat"
+        else
+          exclude_cmd="grep -vE '$exclude_pattern'"
+        fi
+        count=$(git diff origin/${{ github.base_ref }} --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
+        echo "changed_lines_count=$count" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Verify PR size and changed lines
+      run: |
+        if [ ${{ env.changed_files_count }} -le ${{ inputs.max-files }} ] && [ ${{ env.changed_lines_count }} -le ${{ inputs.max-lines }} ]; then
+          echo "The PR size and the total changed lines are within the limits."
+          exit 0 # success
+        else
+          echo "The PR size or the total changed lines exceed the maximum allowed."
+          exit 1 # fail
+        fi
+      shell: bash
