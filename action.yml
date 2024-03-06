@@ -9,8 +9,8 @@ inputs:
     description: 'Maximum number of changed lines allowed in a PR'
     required: true
     default: '400'
-  exclude-filepath:
-    description: 'Pattern of file paths to exclude (regex), separate patterns with |'
+  include-filepath:
+    description: 'Pattern of file paths to include (regex), separate patterns with |'
     required: false
 runs:
   using: 'composite'
@@ -28,25 +28,25 @@ runs:
 
     - name: Get number of changed files
       run: |
-        exclude_pattern=${{ inputs.exclude-filepath }}
-        if [ -z "$exclude_pattern" ]; then
-          exclude_cmd="cat"
+        include_pattern=${{ inputs.include-filepath }}
+        if [ -z "$include_pattern" ]; then
+          include_cmd="cat"
         else
-          exclude_cmd="grep -vE '$exclude_pattern'"
+          include_cmd="grep -E '$include_pattern'"
         fi
-        count=$(git diff  origin/${{ github.base_ref }} --name-only| $exclude_cmd | wc -l)
+        count=$(git diff  origin/${{ github.base_ref }} --name-only| $include_cmd | wc -l)
         echo "changed_files_count=$count" >> $GITHUB_ENV
       shell: bash
 
     - name: Get total number of changed lines
       run: |
-        exclude_pattern=${{ inputs.exclude-filepath }}
-        if [ -z "$exclude_pattern" ]; then
-          exclude_cmd="cat"
+        include_pattern=${{ inputs.include-filepath }}
+        if [ -z "$include_pattern" ]; then
+          include_cmd="cat"
         else
-          exclude_cmd="grep -vE '$exclude_pattern'"
+          include_cmd="grep -E '$include_pattern'"
         fi
-        count=$(git diff origin/${{ github.base_ref }} --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
+        count=$(git diff origin/${{ github.base_ref }} --numstat| $include_cmd | awk '{s+=$1} END {print s}')
         echo "changed_lines_count=$count" >> $GITHUB_ENV
       shell: bash
 
