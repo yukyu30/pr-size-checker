@@ -1,1 +1,1 @@
-# pr-size-chacker
+# pr-size-checker
