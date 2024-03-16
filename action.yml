@@ -15,39 +15,53 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Get number of commits in the PR
+      run: echo "fetch_depth=$(( COMMITS_COUNT+ 1 ))" >> $GITHUB_ENV
+      env:
+        COMMITS_COUNT: ${{ github.event.pull_request.commits }}
+      shell: bash
+
     - uses: actions/checkout@v4
-      name: checkout "${{ github.base_ref }}"
       with:
-        fetch-depth: 1
-        ref: ${{ github.event.pull_request.base.sha }}
-    - uses: actions/checkout@v4
-      name: checkout "${{ github.head_ref }}"
-      with:
-        fetch-depth: 1
-        ref: ${{ github.head_ref}}
+        fetch-depth: ${{ env.fetch_depth }}
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Setup variables
+      run: |
+        exclude_pattern="${{ inputs.exclude-filepath }}"
+        exclude_pattern_cleaned="${exclude_pattern//[$'\r\n']/}"
+        echo "EXCLUDE_PATTERN=$exclude_pattern_cleaned" >> $GITHUB_ENV
+        echo "BASE_COMMIT_SHA=$(git rev-parse HEAD~$(( COMMITS_COUNT )))" >> $GITHUB_ENV
+      env:
+        COMMITS_COUNT: ${{ github.event.pull_request.commits }}
+      shell: bash
 
     - name: Get number of changed files
       run: |
-        exclude_pattern="${exclude_pattern//[$'\r\n' ]}"
-        if [ -z "$exclude_pattern" ]; then
+        if [ -z "$EXCLUDE_PATTERN" ]; then
           exclude_cmd="cat"
         else
           exclude_cmd="grep -vE '$exclude_pattern'"
         fi
-        count=$(git diff origin/${{ github.event.pull_request.base.sha }} --name-only| $exclude_cmd | wc -l)
+        count=$(git diff $BASE_COMMIT_SHA --name-only| $exclude_cmd | wc -l)
         echo "changed_files_count=$count" >> $GITHUB_ENV
+      env:
+        BASE_COMMIT_SHA: ${{ env.BASE_COMMIT_SHA }}
+        EXCLUDE_PATTERN: ${{ env.EXCLUDE_PATTERN }}
       shell: bash
 
     - name: Get total number of changed lines
       run: |
-        exclude_pattern="${exclude_pattern//[$'\r\n' ]}"
-        if [ -z "$exclude_pattern" ]; then
+        if [ -z "$EXCLUDE_PATTERN" ]; then
           exclude_cmd="cat"
         else
-          exclude_cmd="grep -vE '$exclude_pattern'"
+          exclude_cmd="grep -vE '$EXCLUDE_PATTERN'"
         fi
-        count=$(git diff origin/${{ github.event.pull_request.base.sha }} --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
+        count=$(git diff $BASE_COMMIT_SHA --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
         echo "changed_lines_count=$count" >> $GITHUB_ENV
+      env:
+        BASE_COMMIT_SHA: ${{ env.BASE_COMMIT_SHA }}
+        EXCLUDE_PATTERN: ${{ env.EXCLUDE_PATTERN }}
       shell: bash
 
     - name: Verify PR size and changed lines
