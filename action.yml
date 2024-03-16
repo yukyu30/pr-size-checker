@@ -28,7 +28,7 @@ runs:
 
     - name: Get number of changed files
       run: |
-        exclude_pattern=${{ inputs.exclude-filepath }}
+        exclude_pattern="${{ inputs.exclude-filepath }}"
         if [ -z "$exclude_pattern" ]; then
           exclude_cmd="cat"
         else
@@ -40,7 +40,7 @@ runs:
 
     - name: Get total number of changed lines
       run: |
-        exclude_pattern=${{ inputs.exclude-filepath }}
+        exclude_pattern="${{ inputs.exclude-filepath }}"
         if [ -z "$exclude_pattern" ]; then
           exclude_cmd="cat"
         else
