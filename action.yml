@@ -32,6 +32,16 @@ runs:
         fetch-depth: 1
         ref: ${{ github.head_ref}}
 
+    - name: Setup variables
+      run: |
+        exclude_pattern="${{ inputs.exclude-filepath }}"
+        exclude_pattern_cleaned="${exclude_pattern//[$'\r\n']/}"
+        echo "EXCLUDE_PATTERN=$exclude_pattern_cleaned" >> $GITHUB_ENV
+        echo "BASE_COMMIT_SHA=$(git rev-parse HEAD~$(( COMMITS_COUNT )))" >> $GITHUB_ENV
+      env:
+        COMMITS_COUNT: ${{ github.event.pull_request.commits }}
+      shell: bash
+
     - name: Get number of changed files
       run: |
         if [ -z "$EXCLUDE_PATTERN" ]; then
