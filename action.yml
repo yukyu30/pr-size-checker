@@ -49,7 +49,7 @@ runs:
         else
           exclude_cmd="grep -vE '$exclude_pattern'"
         fi
-        count=$(git diff ${{ github.base_ref }} --name-only| $exclude_cmd | wc -l)
+        count=$(git diff origin/${{ github.base_ref }} --name-only| $exclude_cmd | wc -l)
         echo "changed_files_count=$count" >> $GITHUB_ENV
       env:
         BASE_COMMIT_SHA: ${{ env.BASE_COMMIT_SHA }}
@@ -63,7 +63,7 @@ runs:
         else
           exclude_cmd="grep -vE '$EXCLUDE_PATTERN'"
         fi
-        count=$(git diff ${{ github.base_ref }} --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
+        count=$(git diff origin/${{ github.base_ref }} --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
         echo "changed_lines_count=$count" >> $GITHUB_ENV
       env:
         BASE_COMMIT_SHA: ${{ env.BASE_COMMIT_SHA }}
