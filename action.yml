@@ -19,7 +19,7 @@ runs:
       name: checkout "${{ github.base_ref }}"
       with:
         fetch-depth: 1
-        ref: ${{ github.base_ref }}
+        ref: ${{ github.event.pull_request.base.sha }}
     - uses: actions/checkout@v4
       name: checkout "${{ github.head_ref }}"
       with:
@@ -34,7 +34,7 @@ runs:
         else
           exclude_cmd="grep -vE '$exclude_pattern'"
         fi
-        count=$(git diff  origin/${{ github.base_ref }} --name-only| $exclude_cmd | wc -l)
+        count=$(git diff origin/${{ github.event.pull_request.base.sha }} --name-only| $exclude_cmd | wc -l)
         echo "changed_files_count=$count" >> $GITHUB_ENV
       shell: bash
 
@@ -46,7 +46,7 @@ runs:
         else
           exclude_cmd="grep -vE '$exclude_pattern'"
         fi
-        count=$(git diff origin/${{ github.base_ref }} --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
+        count=$(git diff origin/${{ github.event.pull_request.base.sha }} --numstat| $exclude_cmd | awk '{s+=$1} END {print s}')
         echo "changed_lines_count=$count" >> $GITHUB_ENV
       shell: bash
 
